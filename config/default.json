@@ -1,0 +1,6 @@
+{
+  "port": 9001,
+  "jwtPrivateKey": "",
+  "assetsBaseUrl": "",
+  "maxImageCount": 5
+}
