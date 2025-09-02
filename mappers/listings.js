@@ -1,16 +1,18 @@
 import config from "config";
 
 const listingMapper = (listing) => {
-  const baseUrl = config.get("assetsBaseUrl");
-  const mapImage = (image) => ({
-    url: `${baseUrl}${image.fileName}_full.jpg`,
-    thumbnailUrl: `${baseUrl}${image.fileName}_thumb.jpg`,
+  const obj = listing.toObject();
+
+  obj.images = obj.images.map((image) => {
+    if (image.url && image.thumbnailUrl) return image;
+
+    const baseUrl = `${config.get("assetsBaseUrl")}listings/`;
+    return {
+      url: `${baseUrl}${image.filename}_full.jpg`,
+      thumbnailUrl: `${baseUrl}${image.filename}_thumb.jpg`,
+    };
   });
 
-  return {
-    ...listing,
-    images: listing.images.map(mapImage),
-  };
+  return obj;
 };
-
 export { listingMapper };

@@ -1,8 +1,8 @@
 import config from "config";
 import express from "express";
-import multer from "multer";
 import _ from "lodash";
-import path from "path";
+import multer from "multer";
+import mongoose from "mongoose";
 
 import { Category } from "../models/category.js";
 import { Listing, validateData } from "../models/listing.js";
@@ -31,7 +31,7 @@ const upload = multer({
 router.get("/", async (req, res) => {
   const listings = await Listing.find();
   const resources = listings.map(listingMapper);
-  res.send(resources);
+  res.json(resources);
 });
 
 router.get("/:id", async (req, res) => {
@@ -46,17 +46,32 @@ router.get("/:id", async (req, res) => {
 
 router.post(
   "/",
-  [auth, upload.array("images", config.get("maxImageCount")), imageResize],
+  [
+    auth,
+    (req, res, next) => {
+      const handler = upload.any();
+      handler(req, res, (err) => {
+        if (err) return res.status(400).send(err.message);
+        if (!req.files) req.files = [];
+        next();
+      });
+    },
+    imageResize,
+  ],
   async (req, res) => {
     const body = {
       ...req.body,
       price: parseFloat(req.body.price),
-      location: {
-        latitude: parseFloat(req.body.latitude),
-        longitude: parseFloat(req.body.longitude),
-      },
+      location:
+        req.body.latitude && req.body.longitude
+          ? {
+              latitude: parseFloat(req.body.latitude),
+              longitude: parseFloat(req.body.longitude),
+            }
+          : undefined,
     };
-    const { error } = validateData(req.body);
+    if (body.description === "") delete body.description;
+    const { error } = validateData(body);
     if (error) {
       return res
         .status(400)
@@ -66,21 +81,27 @@ router.post(
     const category = await Category.findById(req.body.categoryId);
     if (!category) return res.status(400).send("Invalid categoryId.");
 
-    const user = await User.findById(req.body.userId);
+    const user = await User.findById(req.user._id);
     if (!user) return res.status(400).send("User not found.");
 
     const { title, price, description, location } = body;
+
+    const baseUrl = `${config.get("assetsBaseUrl")}listings/`;
+
+    const images = req.images.map((name) => ({
+      url: `${baseUrl}${name}_full.jpg`,
+      thumbnailUrl: `${baseUrl}${name}_thumb.jpg`,
+    }));
 
     const listing = new Listing({
       title,
       price,
       description,
       category: _.pick(category, ["_id", "name"]),
-      user: { _id: user._id, email: user.email },
+      user: { _id: user._id, email: user.email, name: user.name },
       location: location || null,
-      images: req.images,
+      images,
     });
-
     await listing.save();
 
     res.status(201).send(listing);

@@ -13,7 +13,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, "public/assets/avatars");
   },
-  filename: (req, file, cb) => {
+  fileName: (req, file, cb) => {
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + path.extname(file.originalname));
   },
@@ -63,7 +63,7 @@ router.put("/:id", [auth, upload.single("avatar")], async (req, res) => {
 
   if (name) user.name = name;
   if (req.file) {
-    user.avatarUrl = `/assets/avatars/${req.file.filename}`;
+    user.avatarUrl = `/assets/avatars/${req.file.fileName}`;
   }
 
   await user.save();

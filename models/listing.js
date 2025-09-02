@@ -24,6 +24,7 @@ const listingSchema = new mongoose.Schema({
   user: {
     _id: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     email: { type: String, required: true },
+    name: { type: String, required: true },
   },
   location: {
     latitude: { type: Number },
@@ -41,9 +42,6 @@ function validateData(body) {
     description: z.string().min(3).max(255).optional(),
     categoryId: z.string().refine((val) => mongoose.isValidObjectId(val), {
       message: "Invalid categoryId",
-    }),
-    userId: z.string().refine((val) => mongoose.isValidObjectId(val), {
-      message: "Invalid userId",
     }),
     location: z
       .object({

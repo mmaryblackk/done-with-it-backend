@@ -1,0 +1,5 @@
+{
+  "port": 9001,
+  "assetsBaseUrl": "http://192.168.50.83:9001/assets/",
+  "maxImageCount": 5
+}

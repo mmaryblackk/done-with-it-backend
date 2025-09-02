@@ -11,6 +11,7 @@ import users from "./routes/users.js";
 import auth from "./routes/auth.js";
 
 const app = express();
+app.use(express.static("public"));
 app.use(json());
 
 app.use("/api/listings", listings);
