@@ -1,7 +1,9 @@
 import bcrypt from "bcrypt";
 import express from "express";
 import multer from "multer";
+import config from "config";
 import _ from "lodash";
+import path from "path";
 
 import { auth } from "../middleware/auth.js";
 
@@ -11,14 +13,18 @@ const router = express.Router();
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "public/assets/avatars");
+    cb(null, "public/assets/users");
   },
-  fileName: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
+  filename: (req, file, cb) => {
+    const uniqueName =
+      Date.now() +
+      "-" +
+      Math.round(Math.random() * 1e9) +
+      path.extname(file.originalname);
+    cb(null, uniqueName);
   },
 });
-const upload = multer({ storage });
+const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 router.get("/", async (req, res) => {
   const users = await User.find();
@@ -55,15 +61,18 @@ router.post("/", async (req, res) => {
     .send(_.pick(user, ["_id", "name", "email"]));
 });
 
-router.put("/:id", [auth, upload.single("avatar")], async (req, res) => {
-  const { name } = req.body;
+router.put("/:id", [auth, upload.single("avatarUrl")], async (req, res) => {
+  const { name, email } = req.body;
 
   const user = await User.findById(req.params.id);
   if (!user) return res.status(404).send("User not found");
 
+  const baseUrl = `${config.get("assetsBaseUrl")}users/`;
+
   if (name) user.name = name;
+  if (email) user.email = email;
   if (req.file) {
-    user.avatarUrl = `/assets/avatars/${req.file.fileName}`;
+    user.avatarUrl = baseUrl + req.file.filename;
   }
 
   await user.save();
